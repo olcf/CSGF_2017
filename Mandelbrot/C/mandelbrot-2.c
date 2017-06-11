@@ -6,10 +6,10 @@
 #include <math.h>
 
 // Use continuous color based upon distance
-void CalculateColor(int iteration, double distance, int max_iterations, unsigned char *pixel) {
+void CalculateColor(int iteration, double distance, int max_iterations, double pixel_size, unsigned char *pixel) {
   unsigned char luminosity;
-  if(distance <= 0.5*0.001) {
-    luminosity = pow(distance/(0.5*0.001), 1.0/3.0)  * 255.0;
+  if(distance <= 0.5*pixel_size) {
+    luminosity = pow(distance/(0.5*pixel_size), 1.0/3.0)  * 255.0;
   } else {
     luminosity = 255;
   }
@@ -54,7 +54,7 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   }
 
   // Calculate color based on dwell and distance
-  CalculateColor(iteration, distance, max_iterations, pixel);
+  CalculateColor(iteration, distance, max_iterations, pixel_size, pixel);
 }
 
 int main(int argc, char **argv) {
