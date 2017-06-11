@@ -38,9 +38,9 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
 
 int main(int argc, char **argv) {
   // Image bounds
-  const double center_x = -1.0;
+  const double center_x = -0.75;
   const double center_y =  0.0;
-  const double length_x =  2.5;
+  const double length_x =  2.75;
   const double length_y =  2.0;
 
   // Convenience variables based on image bounds

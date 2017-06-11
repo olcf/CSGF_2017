@@ -8,11 +8,12 @@
 // Use continuous color based upon distance
 void CalculateColor(int iteration, double distance, int max_iterations, unsigned char *pixel) {
   unsigned char luminosity;
-  if(distance < 0.5*0.001) {
-    luminosity = pow(distance/(0.5*0.001), 1.0/3.0) * 255.0;
+  if(distance <= 0.5*0.001) {
+    luminosity = pow(distance/(0.5*0.001), 1.0/3.0)  * 255.0;
   } else {
     luminosity = 255;
   }
+
   pixel[0] = luminosity;
   pixel[1] = luminosity;
   pixel[2] = luminosity;
@@ -26,28 +27,31 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
   int iteration = 0;
-  double escape_radius = 4.0;
-
+  const double escape_radius = 4.0;
+  double distance = 0.0;
   while( (x*x + y*y) < escape_radius && iteration < max_iterations) {
     // Iterate orbit
     const double x_new = x*x - y*y + xO;
     const double y_new = 2.0*x*y + yO;
  
     // Calculate derivative
-    const double tmp_dx = 2*(x*dx - y*dy) + 1;
-    dy = 2*(x*dy + y*dx);
+    const double tmp_dx = 2.0*(x*dx - y*dy) + 1.0;
+    dy = 2.0*(x*dy + y*dx);
     dx = tmp_dx;
 
+    // Update orbit
     x = x_new;
     y = y_new;
- 
     iteration++;
   }
 
-  // Calculate distance
-  const double mag_z = sqrt(x*x + y*y);
-  const double mag_dz = sqrt(dx*dx + dy*dy);
-  const double distance = log(mag_z*mag_z) * mag_z / mag_dz;
+  // Calculate the distance if the orbit escaped
+  if((x*x + y*y) >= escape_radius) {
+    // Calculate distance
+    const double mag_z = sqrt(x*x + y*y);
+    const double mag_dz = sqrt(dx*dx + dy*dy);
+    distance = log(mag_z*mag_z) * mag_z / mag_dz;
+  }
 
   // Calculate color based on dwell and distance
   CalculateColor(iteration, distance, max_iterations, pixel);
@@ -55,9 +59,9 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
 
 int main(int argc, char **argv) {
   // Image bounds
-  const double center_x = -1.0;
+  const double center_x = -0.75;
   const double center_y =  0.0;
-  const double length_x =  2.5;
+  const double length_x =  2.75;
   const double length_y =  2.0;
 
   // Convenience variables based on image bounds
