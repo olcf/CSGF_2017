@@ -16,16 +16,15 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
     pixel[2] = (unsigned char)(V * 255.0);
     return;
   }
-  double hh, p, q, t, ff, R, G, B;
+  float p, q, t, ff, R, G, B;
   long i;
 
-  hh = H;
-  if(hh >= 360.0) {
-    hh = 0.0;
+  if(H >= 360.0) {
+    H = 0.0;
   }
-  hh /= 60.0;
-  i = (long)hh;
-  ff = hh - i;
+  H /= 60.0;
+  i = (long)H;
+  ff = H - i;
   p = V * (1.0 - S);
   q = V * (1.0 - (S * ff));
   t = V * (1.0 - (S * (1.0 - ff)));
@@ -86,10 +85,10 @@ void CalculateColor(double continuous_dwell, double distance, int max_iterations
 
   // Split dwell into scalar and fractional pieces
   const int dwell = floor(continuous_dwell);
-  const double final_rad = continuous_dwell - dwell;
+  const double final_rad = continuous_dwell - (double)dwell;
 
   // Point is within Mandelbrot set
-  if( dwell >= max_iterations) {
+  if(dwell >= max_iterations) {
     H = 0.0;
     S = 0.0;
     V = 1.0;
@@ -157,7 +156,7 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
   int iteration = 0;
-  const double escape_radius = 1000; // Increased to find better distance estimate
+  const double escape_radius = 1000; // Increased from 2.0 to find better distance estimate
   double distance = 0.0;
   double continuous_dwell = 0.0;
 
@@ -178,13 +177,14 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   }
 
   // Calculate the continuous dwell
-  const double mag_z = sqrt(x*x + y*y);
-  continuous_dwell = iteration + log2(log2(mag_z)) - log2(log2(escape_radius));
+  continuous_dwell = iteration;
 
   // Calculate the distance if the orbit escaped
   if((x*x + y*y) >= escape_radius) {
+    const double mag_z = sqrt(x*x + y*y);
     const double mag_dz = sqrt(dx*dx + dy*dy);
     distance = log(mag_z*mag_z) * mag_z / mag_dz;
+    continuous_dwell +=  log2(log2(mag_z)) - log2(log2(escape_radius));
   }
 
   // Calculate color based on dwell and distance
