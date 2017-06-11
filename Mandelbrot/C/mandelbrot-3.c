@@ -16,66 +16,59 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
     pixel[2] = (unsigned char)(V * 255.0);
     return;
   }
-  float p, q, t, ff, R, G, B;
-  long i;
 
-  if(H >= 360.0) {
-    H = 0.0;
+  float R = 0.0;
+  float G = 0.0;
+  float B = 0.0;
+  float C = (V*S);
+  float H_p = H/60.0;
+  float X = C * (1-abs(((int)H_p%2)-1));
+
+  if(H_p >= 0.0 && H_p <= 1.0) {
+    R = C;
+    G = X;
+    B = 0.0;
   }
-  H /= 60.0;
-  i = (long)H;
-  ff = H - i;
-  p = V * (1.0 - S);
-  q = V * (1.0 - (S * ff));
-  t = V * (1.0 - (S * (1.0 - ff)));
+  else if(H_p > 1.0 && H_p <= 2.0) {
+    R = X;
+    G = C;
+    B = 0.0;
+  } 
+  else if(H_p > 2.0 && H_p <= 3.0) {
+    R = 0.0;
+    G = C;
+    B = X;
+  }
+  else if(H_p > 3.0 && H_p <= 4.0) {
+    R = 0.0;
+    G = X;
+    B = C;
+  }
+  else if(H_p > 4.0 && H_p <= 5.0) {
+    R = X;
+    G = 0.0;
+    B = C;
+  }
+  else if(H_p > 5.0 && H_p <= 6.0) {
+    R = C;
+    G = 0.0;
+    B = X;
+  }
 
-  switch(i) {
-    case 0:
-      R = V;
-      G = t;
-      B = p;
-      break;
-    case 1:
-      R = q;
-      G = V;
-      B = p;
-      break;
-    case 2:
-      R = p;
-      G = V;
-      B = t;
-      break;
-    case 3:
-      R = p;
-      G = q;
-      B = V;
-      break;
-    case 4:
-      R = t;
-      G = p;
-      B = V;
-      break;
-    case 5:
-      R = V;
-      G = p;
-      B = q;
-      break;
-    default:
-      R = V;
-      G = p;
-      B = q;
-      break;
-    }
+  float m = V - C;
+  R += m;
+  G += m;
+  B += m;
 
-    unsigned char rc,gc,bc;
+  unsigned char rc,gc,bc;
 
-    rc = (unsigned char)(R * 255.0);
-    gc = (unsigned char)(G * 255.0);
-    bc = (unsigned char)(B * 255.0);
+  rc = (unsigned char)(R * 255.0);
+  gc = (unsigned char)(G * 255.0);
+  bc = (unsigned char)(B * 255.0);
 
-    pixel[0] = rc;
-    pixel[1] = gc;
-    pixel[2] = bc;
+  pixel[0] = rc;
+  pixel[1] = gc;
+  pixel[2] = bc;
 }
 
 // Calculate HSV color in range [0,1]
@@ -129,9 +122,9 @@ void CalculateColor(double continuous_dwell, double distance, int max_iterations
   }
 
   // Break the stripes up depending on angle of orbit at escape
-  if(final_angle > M_PI) {
-    H += 0.02;
-   }
+//  if(final_angle > M_PI) {
+//    H += 0.02;
+//   }
 
   // Break square into full color gradient
   H += 0.0001 * final_rad;
