@@ -1,28 +1,18 @@
-// A basic unoptimized mandelbrot set using continuous dwell  and distance estimator
-// Gray scale visulization
-
+// A basic unoptimized mandelbrot set using continuous dwell and distance estimator
+// Full color Mandelbrot
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 // Convert HSV [0,1] to RGB [0,1]
 void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
-  // convert hue to degrees
-  H *= 360.0;
-
-  if(S <= 0.0) {
-    pixel[0] = (unsigned char)(V * 255.0);
-    pixel[1] = (unsigned char)(V * 255.0);
-    pixel[2] = (unsigned char)(V * 255.0);
-    return;
-  }
-
   float R = 0.0;
   float G = 0.0;
   float B = 0.0;
   float C = (V*S);
-  float H_p = H/60.0;
-  float X = C * (1-abs(((int)H_p%2)-1));
+  float H_p = 360.0*H/60.0;
+  float X = C * (1.0 - fabs((fmod(H_p,2.0) - 1.0)));
 
   if(H_p >= 0.0 && H_p <= 1.0) {
     R = C;
@@ -60,25 +50,15 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
   G += m;
   B += m;
 
-  unsigned char rc,gc,bc;
-
-  rc = (unsigned char)(R * 255.0);
-  gc = (unsigned char)(G * 255.0);
-  bc = (unsigned char)(B * 255.0);
-
-  pixel[0] = rc;
-  pixel[1] = gc;
-  pixel[2] = bc;
+  pixel[0] = R * 255;
+  pixel[1] = G * 255;
+  pixel[2] = B * 255;
 }
 
 // Calculate HSV color in range [0,1]
 // https://www.mrob.com/pub/muency/color.html
-void CalculateColor(double continuous_dwell, double distance, int max_iterations, double pixel_spacing, unsigned char *pixel) {
+void CalculateColor(int dwell, double fractional_dwell, double distance, double final_y, int max_iterations, double pixel_spacing, unsigned char *pixel) {
   float H,S,V;
-
-  // Split dwell into scalar and fractional pieces
-  const int dwell = floor(continuous_dwell);
-  const double final_rad = continuous_dwell - (double)dwell;
 
   // Point is within Mandelbrot set, color white
   if(dwell >= max_iterations) {
@@ -102,7 +82,7 @@ void CalculateColor(double continuous_dwell, double distance, int max_iterations
   }
 
   // log scale dwell
-  double dwell_scaled = log(dwell)/log(100*max_iterations);
+  double dwell_scaled = log(dwell)/log(max_iterations);
 
   // Remap the scaled dwell onto Hue and Saturation
   if(dwell_scaled < 0.5) {
@@ -122,12 +102,12 @@ void CalculateColor(double continuous_dwell, double distance, int max_iterations
   }
 
   // Break the stripes up depending on angle of orbit at escape
-//  if(final_angle > M_PI) {
+//  if(final_y < 0.0) {
 //    H += 0.02;
-//   }
+//  }
 
   // Break square into full color gradient
-  H += 0.0001 * final_rad;
+  H += 0.0001 * fractional_dwell;
 
   // Go around color wheel 10x to cover range 1->max_iterations
   H *= 10.0;
@@ -142,16 +122,16 @@ void CalculateColor(double continuous_dwell, double distance, int max_iterations
 // https://www.mrob.com/pub/muency/distanceestimator.html
 // https://www.mrob.com/pub/muency/continuousdwell.html
 void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
-  const int max_iterations = 100;
+  const int max_iterations = 2000;
 
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
-  int iteration = 0;
-  const double escape_radius = 10000; // Increased from 2.0 to find better distance estimate
+  int dwell = 0;
+  const double escape_radius = 1000.0; // Increased from 2.0 to find better distance estimate
   double distance = 0.0;
   double continuous_dwell = 0.0;
 
-  while( (x*x + y*y) < escape_radius*escape_radius && iteration < max_iterations) {
+  while( (x*x + y*y) < escape_radius*escape_radius && dwell < max_iterations) {
     // Iterate orbit
     const double x_new = x*x - y*y + xO;
     const double y_new = 2.0*x*y + yO;
@@ -164,37 +144,36 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
     // Update orbit
     x = x_new;
     y = y_new;
-    iteration++;
+    dwell++;
   }
 
-  // Calculate the continuous dwell
-  continuous_dwell = iteration;
+  double fractional_dwell = 0.0;
 
   // Calculate the distance if the orbit escaped
   if((x*x + y*y) >= escape_radius*escape_radius) {
     const double mag_z = sqrt(x*x + y*y);
     const double mag_dz = sqrt(dx*dx + dy*dy);
     distance = log(mag_z*mag_z) * mag_z / mag_dz;
-    continuous_dwell += log2(log2(mag_z)) - log2(log2(escape_radius));
+    fractional_dwell = log2(log2(mag_z)) - log2(log2(escape_radius));
   }
 
   // Calculate color based on dwell and distance
-  CalculateColor(continuous_dwell, distance, max_iterations, pixel_size, pixel);
+  CalculateColor(dwell, fractional_dwell, distance, y, max_iterations, pixel_size, pixel);
 }
 
 int main(int argc, char **argv) {
   // Image bounds
-  const double center_x = -0.75;
-  const double center_y =  0.0;
-  const double length_x =  2.75;
-  const double length_y =  2.0;
+  const double center_x = -0.745429;//-0.75;
+  const double center_y =  0.113008;//0.0;
+  const double length_x =  0.00001;//2.75;
+  const double length_y =  0.00001;//2.0;
 
   // Convenience variables based on image bounds
   const double x_min = center_x - length_x/2.0;
   const double x_max = center_x + length_x/2.0;
   const double y_min = center_y - length_y/2.0;
   const double y_max = center_y - length_y/2.0;
-  const double pixel_size = 0.001;
+  const double pixel_size = 0.00001/2000.0;
   const int pixels_x = length_x / pixel_size;
   const int pixels_y = length_y / pixel_size; 
 
