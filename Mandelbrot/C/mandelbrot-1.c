@@ -1,12 +1,12 @@
-// A basic unoptimized mandelbrot set using escape time
+// A basic unoptimized mandelbrot set using escape iterations(dwell)
 // Binary(black and white) visulization
 
 #include <stdio.h>
 #include <stdlib.h>
 
 // If point has escaped color it black, otherwise white
-void CalculateColor(int iteration, int max_iterations, unsigned char *pixel) {
-  if(iteration >= max_iterations) {
+void CalculateColor(int dwell, int max_iterations, unsigned char *pixel) {
+  if(dwell >= max_iterations) {
     pixel[0] = 0;
     pixel[1] = 0;
     pixel[2] = 0;
@@ -24,16 +24,16 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
 
   double x = 0.0;
   double y = 0.0;
-  int iteration = 0;
+  int dwell = 0;
   while( (x*x + y*y) < 4.0 && iteration < max_iterations) {
     const double tmp_x = x*x - y*y + xO;
     y = 2.0*x*y + yO;
     x = tmp_x;
-    iteration++;
+    dwell++;
   }
 
   // Calculate color based upon escape iterations
-  CalculateColor(iteration, max_iterations, pixel);
+  CalculateColor(dwell, max_iterations, pixel);
 }
 
 int main(int argc, char **argv) {

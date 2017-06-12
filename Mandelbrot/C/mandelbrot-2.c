@@ -6,7 +6,7 @@
 #include <math.h>
 
 // Use continuous color based upon distance
-void CalculateColor(int iteration, double distance, int max_iterations, double pixel_size, unsigned char *pixel) {
+void CalculateColor(int dwell, double distance, int max_iterations, double pixel_size, unsigned char *pixel) {
   unsigned char luminosity;
   if(distance <= 0.5*pixel_size) {
     luminosity = pow(distance/(0.5*pixel_size), 1.0/3.0)  * 255.0;
@@ -26,10 +26,10 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
 
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
-  int iteration = 0;
+  int dwell = 0;
   const double escape_radius = 4.0;
   double distance = 0.0;
-  while( (x*x + y*y) < escape_radius && iteration < max_iterations) {
+  while( (x*x + y*y) < (escape_radius*escape_radius) && dwell < max_iterations) {
     // Iterate orbit
     const double x_new = x*x - y*y + xO;
     const double y_new = 2.0*x*y + yO;
@@ -42,11 +42,11 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
     // Update orbit
     x = x_new;
     y = y_new;
-    iteration++;
+    dwell++;
   }
 
   // Calculate the distance if the orbit escaped
-  if((x*x + y*y) >= escape_radius) {
+  if((x*x + y*y) >= (escape_radius*escape_radius)) {
     // Calculate distance
     const double mag_z = sqrt(x*x + y*y);
     const double mag_dz = sqrt(dx*dx + dy*dy);

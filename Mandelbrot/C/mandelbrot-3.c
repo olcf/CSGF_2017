@@ -1,11 +1,14 @@
-// A basic unoptimized mandelbrot set using continuous dwell and distance estimator
+//
+// A basic unoptimized mandelbrot set using Dwell and Distance Estimator methods
 // Continuous color Mandelbrot
 //
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 // Convert HSV [0,1] to RGB [0,1]
+// https://en.wikipedia.org/wiki/HSL_and_HSV#Converting_to_RGB
 void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
   float R = 0.0;
   float G = 0.0;
@@ -107,7 +110,6 @@ void CalculateColor(int dwell,  double distance, int max_iterations, double pixe
 
 // Distance estimator and continuous dwell algorithm
 // https://www.mrob.com/pub/muency/distanceestimator.html
-// https://www.mrob.com/pub/muency/continuousdwell.html
 void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
   const int max_iterations = 10000;
 
@@ -118,7 +120,7 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   double distance = 0.0;
   double continuous_dwell = 0.0;
 
-  while( (x*x + y*y) < escape_radius*escape_radius && dwell < max_iterations) {
+  while( (x*x + y*y) < (escape_radius*escape_radius) && dwell < max_iterations) {
     // Iterate orbit
     const double x_new = x*x - y*y + xO;
     const double y_new = 2.0*x*y + yO;
@@ -135,7 +137,7 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   }
 
   // Calculate the distance if the orbit escaped
-  if((x*x + y*y) >= escape_radius*escape_radius) {
+  if((x*x + y*y) >= (escape_radius*escape_radius)) {
     const double mag_z = sqrt(x*x + y*y);
     const double mag_dz = sqrt(dx*dx + dy*dy);
     distance = log(mag_z*mag_z) * mag_z / mag_dz;
