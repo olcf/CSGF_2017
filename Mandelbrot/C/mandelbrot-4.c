@@ -1,6 +1,6 @@
-// A basic unoptimized mandelbrot set using continuous dwell and distance estimator
-// Full color Mandelbrot
-//
+// Unoptimized Mandelbrot set using continuous dwell and distance estimator
+// Full MuEncy color Mandelbrot
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

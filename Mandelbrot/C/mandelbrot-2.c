@@ -1,4 +1,4 @@
-// A basic unoptimized mandelbrot set using escape iterations(dwell) and distance estimator
+// Unoptimized mandelbrot set using escape iterations(dwell) and distance estimator
 // Gray scale visulization
 
 #include <stdio.h>

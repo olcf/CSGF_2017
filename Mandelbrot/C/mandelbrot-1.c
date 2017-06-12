@@ -1,4 +1,4 @@
-// A basic unoptimized mandelbrot set using escape iterations(dwell)
+// Unoptimized mandelbrot set using escape iterations(dwell)
 // Binary(black and white) visulization
 
 #include <stdio.h>

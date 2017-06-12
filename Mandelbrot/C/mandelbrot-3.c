@@ -1,7 +1,5 @@
-//
-// A basic unoptimized mandelbrot set using Dwell and Distance Estimator methods
-// Continuous color Mandelbrot
-//
+// Unoptimized Mandelbrot set using Dwell and Distance Estimator methods
+// Continuous color
 
 #include <stdio.h>
 #include <stdlib.h>
