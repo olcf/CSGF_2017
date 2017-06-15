@@ -54,7 +54,7 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
 double CalculateHue(double dwell_scaled) {
   double H;
 
-  // Remap the scaled dwell onto Hue and Saturation
+  // Remap the scaled dwell onto Hue
   if(dwell_scaled < 0.5) {
     dwell_scaled = 1.0 - 2.0*dwell_scaled;
     H = 1.0 - dwell_scaled;
@@ -76,6 +76,7 @@ double CalculateSaturation(double dwell_scaled) {
   // Remap the scaled dwell onto Saturation
   S = sqrt(dwell_scaled);
   S -= floor(S);
+
   return S;
 }
 
@@ -95,6 +96,7 @@ void CalculateColor(int dwell,  double distance, double mag_z, double escape_rad
 
   // log scale distance
   const double dist_scaled = log2(distance / pixel_spacing / 2.0);
+
   // Convert scaled distance to Value in 8 intervals
   if (dist_scaled > 0.0) {
     V = 1.0;
@@ -104,38 +106,17 @@ void CalculateColor(int dwell,  double distance, double mag_z, double escape_rad
     V = 0.0;
   }
 
+  // Lighten every other stripe
+  if(dwell%2) {
+    V *= 0.95;
+  }
+
   // log scale dwell
   double dwell_scaled = log(dwell)/log(max_iterations);
-  double dwell_scaled_plus = log(dwell+1)/log(max_iterations);
 
   // Calculate current and next dwell band values
   H = CalculateHue(dwell_scaled);
   S = CalculateSaturation(dwell_scaled);
-  double H_plus = CalculateHue(dwell_scaled_plus);
-  double S_plus = CalculateSaturation(dwell_scaled_plus);
-
-  // Continuously vary between dwell bands in range 0,1
-  double escape_interpolation = 1.0 - log2(log(mag_z)/log(escape_radius));
-
-  // Take the shortest path between angles on the color wheel
-  // Without this crossing over 0 will give eronously large deltas
-  double delta_H = (H_plus - H);
-  double mag_delta_H = fabs(delta_H);               
-  delta_H = fmin(1.0 - mag_delta_H, mag_delta_H); // Find shortest path around color wheel
-
-  double linear_interp_H = delta_H * escape_interpolation;
-  double linear_interp_S = (S_plus - S) * escape_interpolation;
-
-  // Add interpolated delta value
-  H += linear_interp_H;
-  S += linear_interp_S;
-
-  // Wrap values around 0
-  if(H < 0.0) {
-    H = 1.0 + H;
-  } else if(H > 1.0) {
-    H = H - 1.0;
-  }
 
   // Convert to RGB and set pixel value
   HSVtoRGB(H, S, V, pixel);
@@ -182,43 +163,62 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
 }
 
 int main(int argc, char **argv) {
-  // Image bounds
-  const double center_x = -0.75;
-  const double center_y =  0.0;
-  const double length_x =  2.75;
-  const double length_y =  2.0;
+  // Animation constraints
+  int frame_count = 200;
+  const double center_x = -0.745429;
+  const double center_y =  0.113008;
+  const double length_x_begin = 2.0;
+  const double length_y_begin = 2.0;
+  const double length_x_end =  0.00001;
+  const double length_y_end =  0.00001;
+  const double delta_length = (length_x_end - length_x_begin)/(double)frame_count;
 
-  // Convenience variables based on image bounds
-  const double x_min = center_x - length_x/2.0;
-  const double x_max = center_x + length_x/2.0;
-  const double y_min = center_y - length_y/2.0;
-  const double y_max = center_y - length_y/2.0;
-  const double pixel_size = length_x/2000.0;
+  double length_x = length_x_begin;
+  double length_y = length_y_begin;
+  double pixel_size = length_x/2000.0;
   const int pixels_x = length_x / pixel_size;
-  const int pixels_y = length_y / pixel_size; 
+  const int pixels_y = length_y / pixel_size;
 
   // Linearized 2D image data packed in RGB format in range [0-255]
   size_t pixel_bytes = sizeof(unsigned char)*3*pixels_x*pixels_y;
   unsigned char *pixels = malloc(pixel_bytes);
 
-  // Iterate over each pixel and calculate RGB color
-  for(int n_y=0; n_y<pixels_y; n_y++) {
-      double y = y_min + n_y * pixel_size;
-    for(int n_x=0; n_x<pixels_x; n_x++) {
-      double x = x_min + n_x * pixel_size;
+  char file_name[100];
 
-      unsigned char *pixel = pixels + (3 * (pixels_x * n_y + n_x));
-      CalculatePixel(x, y, pixel_size, pixel);
+  for(int frame=0; frame<frame_count; frame++) {
+    // Convenience variables based on image bounds
+    const double x_min = center_x - length_x/2.0;
+    const double x_max = center_x + length_x/2.0;
+    const double y_min = center_y - length_y/2.0;
+    const double y_max = center_y - length_y/2.0;
+
+    printf("%f, %f, %f, %f\n", x_min, x_max, y_min, y_max);
+
+    // Iterate over each pixel and calculate RGB color
+    for(int n_y=0; n_y<pixels_y; n_y++) {
+        double y = y_min + n_y * pixel_size;
+      for(int n_x=0; n_x<pixels_x; n_x++) {
+        double x = x_min + n_x * pixel_size;
+
+        unsigned char *pixel = pixels + (3 * (pixels_x * n_y + n_x));
+        CalculatePixel(x, y, pixel_size, pixel);
+      }
     }
-  }  
 
-  // Write pixels to PPM P6 formatted file
-  FILE *file = fopen("mandelbrot.ppm", "wb");
-  fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
-  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
+    // Dump pixels to binary file
+    sprintf(file_name, "mandelbrot%03d.ppm", frame);
+    FILE *file = fopen(file_name, "wb");
+    fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
+    fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
+    printf("Saved %d by %d image %d of %d\n", pixels_x, pixels_y, frame+1, frame_count);
+    fclose(file);
 
-  // Cleanup
-  fclose(file);
+    // "Zoom" in image
+    length_x += delta_length;
+    length_y += delta_length;
+    pixel_size = length_x/2000.0;
+  }
+
   free(pixels);
 
   return 0;

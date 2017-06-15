@@ -1,12 +1,11 @@
-// Unoptimized Mandelbrot set using Dwell and Distance Estimator methods
-// Continuous color
+// Unoptimized Mandelbrot set using continuous dwell and distance estimator
+// Full MuEncy color Mandelbrot
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 // Convert HSV [0,1] to RGB [0,1]
-// https://en.wikipedia.org/wiki/HSL_and_HSV#Converting_to_RGB
 void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
   float R = 0.0;
   float G = 0.0;
@@ -52,8 +51,8 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
 }
 
 // Calculate HSV color in range [0,1]
-// Based off basic principles outlines in https://www.mrob.com/pub/muency/color.html
-void CalculateColor(int dwell,  double distance, double mag_z, int max_iterations, double pixel_spacing, unsigned char *pixel) {
+// https://www.mrob.com/pub/muency/color.html
+void CalculateColor(int dwell, double fractional_dwell, double distance, double final_y, int max_iterations, double pixel_spacing, unsigned char *pixel) {
   float H,S,V;
 
   // Point is within Mandelbrot set, color white
@@ -78,11 +77,12 @@ void CalculateColor(int dwell,  double distance, double mag_z, int max_iteration
   }
 
   // log scale dwell
-  double dwell_scaled = log(dwell)/log(max_iterations);
+  const double dwell_scale = 1.0;
+  double dwell_scaled = log(dwell)/log(dwell_scale * max_iterations);
 
   // Remap the scaled dwell onto Hue and Saturation
   if(dwell_scaled < 0.5) {
-    dwell_scaled = 1.0 - 2.0*dwell_scaled;
+    dwell_scaled = 1.0 - 1.5*dwell_scaled;
     H = 1.0 - dwell_scaled;
     S = sqrt(dwell_scaled);
   } else {
@@ -91,52 +91,25 @@ void CalculateColor(int dwell,  double distance, double mag_z, int max_iteration
     S = sqrt(dwell_scaled);
   }
 
+  // Lighten every other stripe
+  if(dwell%2) {
+    H += 0.2;
+    // Can also modify Saturation if desired S *= 0.8;
+  }
+
+  // Break the stripes up depending on angle of orbit at escape
+  if(final_y < 0.0) {
+    H += 0.02;
+    S += 0.1;
+  }
+
+  // Break square into full color gradient
+  H += 0.05 * fractional_dwell;
+
   // Go around color wheel 10x to cover range 1->max_iterations
   H *= 10.0;
   H -= floor(H);
   S -= floor(S);
-
-  // log scale dwell for next band
-  dwell_scaled = log(dwell+1)/log(max_iterations);
-  double Hp1, Sp1;
-  // Remap the scaled dwell onto Hue and Saturation
-  if(dwell_scaled < 0.5) {
-    dwell_scaled = 1.0 - 2.0*dwell_scaled;
-    Hp1 = 1.0 - dwell_scaled;
-    Sp1 = sqrt(dwell_scaled);
-  } else {
-    dwell_scaled = 1.5*dwell_scaled - 0.5;
-    Hp1 = dwell_scaled;
-    Sp1 = sqrt(dwell_scaled);
-  }
-
-  // Go around color wheel 10x to cover range 1->max_iterations
-  Hp1 *= 10.0;
-  Hp1 -= floor(Hp1);
-  Sp1 -= floor(Sp1);
-
-  // Continuously vary between dwell bands in range 0,1
-  double frac = 1.0 - log2(log(mag_z)/log(1<<18));
-
-  // Take the shortest path between angles on the color wheel
-  // Without this crossing over 0 will give eronously large deltas
-  double delta_H = (Hp1 - H);
-  double mag_delta_H = fabs(delta_H);               
-  delta_H = fmin(1.0 - mag_delta_H, mag_delta_H); // Find shortest path around color wheel
-
-  double linear_interp_H = delta_H * frac;
-  double linear_interp_S = (Sp1 - S) * frac;
-
-  // Add interpolated delta value
-  H += linear_interp_H;
-//  S += linear_interp_S;
-
-  // Wrap values around 0
-  if(H < 0.0) {
-    H = 1.0 + H;
-  } else if(H > 1.0) {
-    H = H - 1.0;
-  }
 
   // Convert to RGB and set pixel value
   HSVtoRGB(H, S, V, pixel);
@@ -144,17 +117,18 @@ void CalculateColor(int dwell,  double distance, double mag_z, int max_iteration
 
 // Distance estimator and continuous dwell algorithm
 // https://www.mrob.com/pub/muency/distanceestimator.html
+// https://www.mrob.com/pub/muency/continuousdwell.html
 void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
   const int max_iterations = 10000;
 
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
   int dwell = 0;
-  const double escape_radius = 1<<18; // Increased from 2.0 to find better distance estimate
+  const double escape_radius = 100.0; // Increased from 2.0 to find better distance estimate
   double distance = 0.0;
   double continuous_dwell = 0.0;
 
-  while( (x*x + y*y) < (escape_radius*escape_radius) && dwell < max_iterations) {
+  while( (x*x + y*y) < escape_radius*escape_radius && dwell < max_iterations) {
     // Iterate orbit
     const double x_new = x*x - y*y + xO;
     const double y_new = 2.0*x*y + yO;
@@ -169,25 +143,27 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
     y = y_new;
     dwell++;
   }
- 
-   const double mag_z = sqrt(x*x + y*y);
- 
+
+  double fractional_dwell = 0.0;
+
   // Calculate the distance if the orbit escaped
-  if((x*x + y*y) >= (escape_radius*escape_radius)) {
+  if((x*x + y*y) >= escape_radius*escape_radius) {
+    const double mag_z = sqrt(x*x + y*y);
     const double mag_dz = sqrt(dx*dx + dy*dy);
     distance = log(mag_z*mag_z) * mag_z / mag_dz;
+    fractional_dwell = log2(log2(mag_z)) - log2(log2(escape_radius));
   }
 
   // Calculate color based on dwell and distance
-  CalculateColor(dwell, distance, mag_z,  max_iterations, pixel_size, pixel);
+  CalculateColor(dwell, fractional_dwell, distance, y, max_iterations, pixel_size, pixel);
 }
 
 int main(int argc, char **argv) {
   // Image bounds
-  const double center_x = -0.75;
-  const double center_y =  0.0;
-  const double length_x =  2.75;
-  const double length_y =  2.0;
+  const double center_x = -0.745429;//-0.75;
+  const double center_y =  0.113008;//0.0;
+  const double length_x =  0.00001;//2.75;
+  const double length_y =  0.00001;//2.0;
 
   // Convenience variables based on image bounds
   const double x_min = center_x - length_x/2.0;
@@ -213,10 +189,10 @@ int main(int argc, char **argv) {
     }
   }  
 
-  // Dump pixels to binary file
-  FILE *file = fopen("mandelbrot.raw", "wb");
-  fwrite(pixels, sizeof(char), 3*pixels_x*pixels_y, file);
-  printf("Saved %d by %d image\n", pixels_x, pixels_y);
+  // Write pixels to PPM P6 formatted file
+  FILE *file = fopen("mandelbrot.ppm", "wb");
+  fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
+  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
 
   // Cleanup
   fclose(file);

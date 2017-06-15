@@ -23,11 +23,11 @@ void CalculateColor(int dwell, double distance, int max_iterations, double pixel
 // https://www.mrob.com/pub/muency/distanceestimator.html
 void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
   const int max_iterations = 1000;
+  const double escape_radius = 4.0;
 
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
   int dwell = 0;
-  const double escape_radius = 4.0;
   double distance = 0.0;
   while( (x*x + y*y) < (escape_radius*escape_radius) && dwell < max_iterations) {
     // Iterate orbit
@@ -54,7 +54,7 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   }
 
   // Calculate color based on dwell and distance
-  CalculateColor(iteration, distance, max_iterations, pixel_size, pixel);
+  CalculateColor(dwell, distance, max_iterations, pixel_size, pixel);
 }
 
 int main(int argc, char **argv) {
@@ -88,10 +88,10 @@ int main(int argc, char **argv) {
     }
   }  
 
-  // Dump pixels to binary file
-  FILE *file = fopen("mandelbrot.raw", "wb");
-  fwrite(pixels, sizeof(char), 3*pixels_x*pixels_y, file);
-  printf("Saved %d by %d image\n", pixels_x, pixels_y);
+  // Write pixels to PPM P6 formatted file
+  FILE *file = fopen("mandelbrot.ppm", "wb");
+  fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
+  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
 
   // Cleanup
   fclose(file);

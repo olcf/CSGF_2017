@@ -21,11 +21,12 @@ void CalculateColor(int dwell, int max_iterations, unsigned char *pixel) {
 // https://en.wikipedia.org/wiki/Mandelbrot_set
 void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
   const int max_iterations = 1000;
+  const double escape_radius = 2.0;
 
   double x = 0.0;
   double y = 0.0;
   int dwell = 0;
-  while( (x*x + y*y) < 4.0 && iteration < max_iterations) {
+  while( (x*x + y*y) < escape_radius*escape_radius && dwell < max_iterations) {
     const double tmp_x = x*x - y*y + xO;
     y = 2.0*x*y + yO;
     x = tmp_x;
@@ -67,10 +68,10 @@ int main(int argc, char **argv) {
     }
   }  
 
-  // Dump pixels to binary file
-  FILE *file = fopen("mandelbrot.raw", "wb");
-  fwrite(pixels, sizeof(char), 3*pixels_x*pixels_y, file);
-  printf("Saved %d by %d image\n", pixels_x, pixels_y);
+  // Write pixels to PPM P6 formatted file
+  FILE *file = fopen("mandelbrot.ppm", "wb");
+  fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
+  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
 
   // Cleanup
   fclose(file);

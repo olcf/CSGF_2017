@@ -51,9 +51,38 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
   pixel[2] = B * 255;
 }
 
+double CalculateHue(double dwell_scaled) {
+  double H;
+
+  // Remap the scaled dwell onto Hue
+  if(dwell_scaled < 0.5) {
+    dwell_scaled = 1.0 - 2.0*dwell_scaled;
+    H = 1.0 - dwell_scaled;
+  } else {
+    dwell_scaled = 1.5*dwell_scaled - 0.5;
+    H = dwell_scaled;
+  }
+
+  // Go around color wheel 10x to cover range 1->max_iterations
+  H *= 10.0;
+  H -= floor(H);
+
+  return H;
+}
+
+double CalculateSaturation(double dwell_scaled) {
+  double S;
+
+  // Remap the scaled dwell onto Saturation
+  S = sqrt(dwell_scaled);
+  S -= floor(S);
+
+  return S;
+}
+
 // Calculate HSV color in range [0,1]
 // Based off basic principles outlines in https://www.mrob.com/pub/muency/color.html
-void CalculateColor(int dwell,  double distance, double mag_z, int max_iterations, double pixel_spacing, unsigned char *pixel) {
+void CalculateColor(int dwell,  double distance, double mag_z, double escape_radius, int max_iterations, double pixel_spacing, unsigned char *pixel) {
   float H,S,V;
 
   // Point is within Mandelbrot set, color white
@@ -77,66 +106,17 @@ void CalculateColor(int dwell,  double distance, double mag_z, int max_iteration
     V = 0.0;
   }
 
+  // Lighten every other stripe
+  if(dwell%2) {
+    V *= 0.95;
+  }
+
   // log scale dwell
   double dwell_scaled = log(dwell)/log(max_iterations);
 
-  // Remap the scaled dwell onto Hue and Saturation
-  if(dwell_scaled < 0.5) {
-    dwell_scaled = 1.0 - 2.0*dwell_scaled;
-    H = 1.0 - dwell_scaled;
-    S = sqrt(dwell_scaled);
-  } else {
-    dwell_scaled = 1.5*dwell_scaled - 0.5;
-    H = dwell_scaled;
-    S = sqrt(dwell_scaled);
-  }
-
-  // Go around color wheel 10x to cover range 1->max_iterations
-  H *= 10.0;
-  H -= floor(H);
-  S -= floor(S);
-
-  // log scale dwell for next band
-  dwell_scaled = log(dwell+1)/log(max_iterations);
-  double Hp1, Sp1;
-  // Remap the scaled dwell onto Hue and Saturation
-  if(dwell_scaled < 0.5) {
-    dwell_scaled = 1.0 - 2.0*dwell_scaled;
-    Hp1 = 1.0 - dwell_scaled;
-    Sp1 = sqrt(dwell_scaled);
-  } else {
-    dwell_scaled = 1.5*dwell_scaled - 0.5;
-    Hp1 = dwell_scaled;
-    Sp1 = sqrt(dwell_scaled);
-  }
-
-  // Go around color wheel 10x to cover range 1->max_iterations
-  Hp1 *= 10.0;
-  Hp1 -= floor(Hp1);
-  Sp1 -= floor(Sp1);
-
-  // Continuously vary between dwell bands in range 0,1
-  double frac = 1.0 - log2(log(mag_z)/log(1<<18));
-
-  // Take the shortest path between angles on the color wheel
-  // Without this crossing over 0 will give eronously large deltas
-  double delta_H = (Hp1 - H);
-  double mag_delta_H = fabs(delta_H);               
-  delta_H = fmin(1.0 - mag_delta_H, mag_delta_H); // Find shortest path around color wheel
-
-  double linear_interp_H = delta_H * frac;
-  double linear_interp_S = (Sp1 - S) * frac;
-
-  // Add interpolated delta value
-  H += linear_interp_H;
-//  S += linear_interp_S;
-
-  // Wrap values around 0
-  if(H < 0.0) {
-    H = 1.0 + H;
-  } else if(H > 1.0) {
-    H = H - 1.0;
-  }
+  // Calculate current and next dwell band values
+  H = CalculateHue(dwell_scaled);
+  S = CalculateSaturation(dwell_scaled);
 
   // Convert to RGB and set pixel value
   HSVtoRGB(H, S, V, pixel);
@@ -146,11 +126,11 @@ void CalculateColor(int dwell,  double distance, double mag_z, int max_iteration
 // https://www.mrob.com/pub/muency/distanceestimator.html
 void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
   const int max_iterations = 10000;
+  const double escape_radius = 1<<18;
 
   double x=0.0,y=0.0;
   double dx=0.0,dy=0.0;
   int dwell = 0;
-  const double escape_radius = 1<<18; // Increased from 2.0 to find better distance estimate
   double distance = 0.0;
   double continuous_dwell = 0.0;
 
@@ -179,7 +159,7 @@ void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixe
   }
 
   // Calculate color based on dwell and distance
-  CalculateColor(dwell, distance, mag_z,  max_iterations, pixel_size, pixel);
+  CalculateColor(dwell, distance, mag_z, escape_radius, max_iterations, pixel_size, pixel);
 }
 
 int main(int argc, char **argv) {
@@ -213,10 +193,10 @@ int main(int argc, char **argv) {
     }
   }  
 
-  // Dump pixels to binary file
-  FILE *file = fopen("mandelbrot.raw", "wb");
-  fwrite(pixels, sizeof(char), 3*pixels_x*pixels_y, file);
-  printf("Saved %d by %d image\n", pixels_x, pixels_y);
+  // Write pixels to PPM P6 formatted file
+  FILE *file = fopen("mandelbrot.ppm", "wb");
+  fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
+  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
 
   // Cleanup
   fclose(file);
