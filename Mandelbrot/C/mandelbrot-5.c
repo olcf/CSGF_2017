@@ -5,8 +5,14 @@
 #include <stdlib.h>
 #include <math.h>
 
+typedef struct pixel {
+  unsigned char R;
+  unsigned char G;
+  unsigned char B;
+} pixel_t;
+
 // Convert HSV [0,1] to RGB [0,1]
-void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
+void HSVtoRGB(float H, float S, float V, pixel_t *pixel) {
   float R = 0.0;
   float G = 0.0;
   float B = 0.0;
@@ -45,14 +51,14 @@ void HSVtoRGB(float H, float S, float V, unsigned char *pixel) {
   G += m;
   B += m;
 
-  pixel[0] = R * 255;
-  pixel[1] = G * 255;
-  pixel[2] = B * 255;
+  (*pixel).R = R * 255;
+  (*pixel).G = G * 255;
+  (*pixel).B = B * 255;
 }
 
 // Calculate HSV color in range [0,1]
 // https://www.mrob.com/pub/muency/color.html
-void CalculateColor(int dwell, double fractional_dwell, double distance, double final_y, int max_iterations, double pixel_spacing, unsigned char *pixel) {
+void CalculateColor(int dwell, double fractional_dwell, double distance, double final_y, int max_iterations, double pixel_spacing, pixel_t *pixel) {
   float H,S,V;
 
   // Point is within Mandelbrot set, color white
@@ -118,7 +124,7 @@ void CalculateColor(int dwell, double fractional_dwell, double distance, double 
 // Distance estimator and continuous dwell algorithm
 // https://www.mrob.com/pub/muency/distanceestimator.html
 // https://www.mrob.com/pub/muency/continuousdwell.html
-void CalculatePixel(double xO, double yO, double pixel_size, unsigned char *pixel) {
+void CalculatePixel(double xO, double yO, double pixel_size, pixel_t *pixel) {
   const int max_iterations = 10000;
 
   double x=0.0,y=0.0;
@@ -173,8 +179,8 @@ int main(int argc, char **argv) {
   const int pixels_y = length_y / pixel_size; 
 
   // Linearized 2D image data packed in RGB format in range [0-255]
-  size_t pixel_bytes = sizeof(unsigned char)*3*pixels_x*pixels_y;
-  unsigned char *pixels = malloc(pixel_bytes);
+  size_t pixel_bytes = sizeof(pixel_t)*pixels_x*pixels_y;
+  pixel_t *pixels = malloc(pixel_bytes);
 
   // Iterate over each pixel and calculate RGB color
   for(int n_y=0; n_y<pixels_y; n_y++) {
@@ -182,7 +188,7 @@ int main(int argc, char **argv) {
     for(int n_x=0; n_x<pixels_x; n_x++) {
       double x = x_min + n_x * pixel_size;
 
-      unsigned char *pixel = pixels + (3 * (pixels_x * n_y + n_x));
+      pixel_t *pixel = pixels + (pixels_x * n_y + n_x);
       CalculatePixel(x, y, pixel_size, pixel);
     }
   }  
@@ -190,7 +196,7 @@ int main(int argc, char **argv) {
   // Write pixels to PPM P6 formatted file
   FILE *file = fopen("mandelbrot.ppm", "wb");
   fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
-  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
+  fwrite(pixels, sizeof(pixel_t), pixels_x*pixels_y, file);
 
   // Cleanup
   fclose(file);
