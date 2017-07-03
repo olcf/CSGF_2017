@@ -81,8 +81,8 @@ int main(int argc, char **argv) {
     }
   }  
 
-  // Write pixels to PPM P6 formatted file
-  FILE *file = fopen("mandelbrot.ppm", "wb");
+  // Write pixels to PGM P5 formatted file
+  FILE *file = fopen("mandelbrot.pgm", "wb");
   fprintf(file, "P5\n%d %d\n%d\n", pixels_x, pixels_y, 255);
   fwrite(pixels, sizeof(unsigned char), pixels_x*pixels_y, file);
 
