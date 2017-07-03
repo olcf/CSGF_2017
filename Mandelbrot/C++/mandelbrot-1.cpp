@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <math.h>
 
 // If point has escaped color it black, otherwise white
 void CalculateColor(int dwell, int max_iterations, unsigned char& pixel) {
