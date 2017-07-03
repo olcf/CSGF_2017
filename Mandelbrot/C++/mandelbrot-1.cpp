@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 
   // Write pixels to PPM P6 formatted file
   std::ofstream output_file("mandelbrot.pgm", std::ios::out | std::ofstream::binary);
-  output_file << "P5\n" << pixels_x << pixels_y << "255\n";
+  output_file << "P5\n" << pixels_x << " " << pixels_y << " 255\n";
   std::copy(pixels.begin(), pixels.end(), std::ostreambuf_iterator<char>(output_file));
   output_file.close();
 
