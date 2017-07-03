@@ -42,9 +42,7 @@ int main(int argc, char **argv) {
 
   // Convenience variables based on image bounds
   const double x_min = center_x - length_x/2.0;
-  const double x_max = center_x + length_x/2.0;
   const double y_min = center_y - length_y/2.0;
-  const double y_max = center_y - length_y/2.0;
   const double pixel_size = 0.001;
   const int pixels_x = length_x / pixel_size;
   const int pixels_y = length_y / pixel_size; 

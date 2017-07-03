@@ -188,11 +188,7 @@ int main(int argc, char **argv) {
   for(int frame=0; frame<frame_count; frame++) {
     // Convenience variables based on image bounds
     const double x_min = center_x - length_x/2.0;
-    const double x_max = center_x + length_x/2.0;
     const double y_min = center_y - length_y/2.0;
-    const double y_max = center_y - length_y/2.0;
-
-    printf("%f, %f, %f, %f\n", x_min, x_max, y_min, y_max);
 
     // Iterate over each pixel and calculate RGB color
     for(int n_y=0; n_y<pixels_y; n_y++) {
