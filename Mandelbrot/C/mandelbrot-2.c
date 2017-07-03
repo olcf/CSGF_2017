@@ -7,16 +7,11 @@
 
 // Use continuous color based upon distance
 void CalculateColor(int dwell, double distance, int max_iterations, double pixel_size, unsigned char *pixel) {
-  unsigned char luminosity;
   if(distance <= 0.5*pixel_size) {
-    luminosity = pow(distance/(0.5*pixel_size), 1.0/3.0)  * 255.0;
+    *pixel = pow(distance/(0.5*pixel_size), 1.0/3.0)  * 255.0;
   } else {
-    luminosity = 255;
+    *pixel = 255;
   }
-
-  pixel[0] = luminosity;
-  pixel[1] = luminosity;
-  pixel[2] = luminosity;
 }
 
 // Distance estimator algorithm
@@ -74,7 +69,7 @@ int main(int argc, char **argv) {
   const int pixels_y = length_y / pixel_size; 
 
   // Linearized 2D image data packed in RGB format in range [0-255]
-  size_t pixel_bytes = sizeof(unsigned char)*3*pixels_x*pixels_y;
+  size_t pixel_bytes = sizeof(unsigned char)*pixels_x*pixels_y;
   unsigned char *pixels = malloc(pixel_bytes);
 
   // Iterate over each pixel and calculate RGB color
@@ -83,15 +78,15 @@ int main(int argc, char **argv) {
     for(int n_x=0; n_x<pixels_x; n_x++) {
       double x = x_min + n_x * pixel_size;
 
-      unsigned char *pixel = pixels + (3 * (pixels_x * n_y + n_x));
+      unsigned char *pixel = pixels + (pixels_x * n_y + n_x);
       CalculatePixel(x, y, pixel_size, pixel);
     }
   }  
 
   // Write pixels to PPM P6 formatted file
   FILE *file = fopen("mandelbrot.ppm", "wb");
-  fprintf(file, "P6\n%d %d\n%d\n", pixels_x, pixels_y, 255);
-  fwrite(pixels, sizeof(unsigned char), 3*pixels_x*pixels_y, file);
+  fprintf(file, "P5\n%d %d\n%d\n", pixels_x, pixels_y, 255);
+  fwrite(pixels, sizeof(unsigned char), pixels_x*pixels_y, file);
 
   // Cleanup
   fclose(file);
