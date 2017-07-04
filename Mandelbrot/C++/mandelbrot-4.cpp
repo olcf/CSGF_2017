@@ -1,5 +1,5 @@
 // Unoptimized Mandelbrot set using Dwell and Distance Estimator methods
-// Full color
+// Continuous color
 
 #include <iostream>
 #include <vector>
@@ -68,7 +68,7 @@ void HSVtoRGB(float H, float S, float V, pixel_t& pixel) {
 double CalculateHue(double dwell_scaled) {
   double H;
 
-  // Remap the scaled dwell onto Hue
+  // Remap the scaled dwell onto Hue and Saturation
   if(dwell_scaled < 0.5) {
     dwell_scaled = 1.0 - 2.0*dwell_scaled;
     H = 1.0 - dwell_scaled;
@@ -90,7 +90,6 @@ double CalculateSaturation(double dwell_scaled) {
   // Remap the scaled dwell onto Saturation
   S = sqrt(dwell_scaled);
   S -= floor(S);
-
   return S;
 }
 
@@ -110,7 +109,6 @@ void CalculateColor(int dwell,  double distance, double mag_z, double escape_rad
 
   // log scale distance
   const double dist_scaled = log2(distance / pixel_spacing / 2.0);
-
   // Convert scaled distance to Value in 8 intervals
   if (dist_scaled > 0.0) {
     V = 1.0;
@@ -120,17 +118,38 @@ void CalculateColor(int dwell,  double distance, double mag_z, double escape_rad
     V = 0.0;
   }
 
-  // Lighten every other stripe
-  if(dwell%2) {
-    V *= 0.95;
-  }
-
   // log scale dwell
   double dwell_scaled = log(dwell)/log(max_iterations);
+  double dwell_scaled_plus = log(dwell+1)/log(max_iterations);
 
   // Calculate current and next dwell band values
   H = CalculateHue(dwell_scaled);
   S = CalculateSaturation(dwell_scaled);
+  double H_plus = CalculateHue(dwell_scaled_plus);
+  double S_plus = CalculateSaturation(dwell_scaled_plus);
+
+  // Continuously vary between dwell bands in range 0,1
+  double escape_interpolation = 1.0 - log2(log(mag_z)/log(escape_radius));
+
+  // Take the shortest path between angles on the color wheel
+  // Without this crossing over 0 will give eronously large deltas
+  double delta_H = (H_plus - H);
+  double mag_delta_H = fabs(delta_H);               
+  delta_H = fmin(1.0 - mag_delta_H, mag_delta_H); // Find shortest path around color wheel
+
+  double linear_interp_H = delta_H * escape_interpolation;
+  double linear_interp_S = (S_plus - S) * escape_interpolation;
+
+  // Add interpolated delta value
+  H += linear_interp_H;
+  S += linear_interp_S;
+
+  // Wrap values around 0
+  if(H < 0.0) {
+    H = 1.0 + H;
+  } else if(H > 1.0) {
+    H = H - 1.0;
+  }
 
   // Convert to RGB and set pixel value
   HSVtoRGB(H, S, V, pixel);
@@ -208,6 +227,10 @@ int main(int argc, char **argv) {
   output_file << "P6\n" << pixels_x << " " << pixels_y << " 255\n";
   std::copy(pixels.begin(), pixels.end(), std::ostream_iterator<pixel_t>(output_file));
   output_file.close();
+
+  // Cleanup
+  fclose(file);
+  free(pixels);
 
   return 0;
 }
