@@ -228,9 +228,5 @@ int main(int argc, char **argv) {
   std::copy(pixels.begin(), pixels.end(), std::ostream_iterator<pixel_t>(output_file));
   output_file.close();
 
-  // Cleanup
-  fclose(file);
-  free(pixels);
-
   return 0;
 }
