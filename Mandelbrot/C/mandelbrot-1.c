@@ -9,7 +9,7 @@ void CalculateColor(int dwell, int max_iterations, unsigned char *pixel) {
   if(dwell >= max_iterations) {
     *pixel = 0;
   } else {
-    *pixel[0] = 255;
+    *pixel = 255;
   }
 }
 
