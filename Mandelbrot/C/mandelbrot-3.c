@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
   const int pixels_y = length_y / pixel_size; 
 
   // Linearized 2D image data packed in RGB format in range [0-255]
-  size_t pixel_bytes = sizeof(pixel_t)*3*pixels_x*pixels_y;
+  size_t pixel_bytes = sizeof(pixel_t)*pixels_x*pixels_y;
   pixel_t *pixels = malloc(pixel_bytes);
 
   // Iterate over each pixel and calculate RGB color
