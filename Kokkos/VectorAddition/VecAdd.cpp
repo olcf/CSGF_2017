@@ -5,8 +5,6 @@
 #include <assert.h>
 #include <limits> 
 
-constexpr double pi() { return std::atan(1)*4; }
-
 int main(int argc, char **argv) {
   // Initialize Kokkos
   Kokkos::initialize(argc, argv);

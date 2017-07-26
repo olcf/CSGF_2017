@@ -1,5 +1,5 @@
 KOKKOS_PATH = ${HOME}/kokkos
-KOKKOS_DEVICES = "OpenMP"
+KOKKOS_DEVICES = "Cuda"
 EXE_NAME = "vec_add"
 
 SRC = $(wildcard *.cpp)
@@ -9,7 +9,7 @@ default: build
 ifneq (,$(findstring Cuda,$(KOKKOS_DEVICES)))
 CXX = ${KOKKOS_PATH}/config/nvcc_wrapper
 EXE = ${EXE_NAME}.cuda
-KOKKOS_ARCH = "Power8,Maxwell61"
+KOKKOS_ARCH = "Power8,Pascal60"
 KOKKOS_CUDA_OPTIONS = "enable_lambda"
 else
 CXX = g++
