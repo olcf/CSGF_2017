@@ -2,10 +2,14 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Parallel.hpp>
 #include <Kokkos_View.hpp>
+#include "mpi.h"
 #include <assert.h>
 #include <limits> 
 
 int main(int argc, char **argv) {
+  // Initialize MPI before Kokkos
+  MPI_Init(&argc, &argv);
+
   // Initialize Kokkos
   Kokkos::initialize(argc, argv);
 
@@ -42,5 +46,8 @@ int main(int argc, char **argv) {
   std::cout<<"Sum Correct\n";
 
   Kokkos::finalize();
+
+  MPI_Finalize();
+
   return 0;
 }

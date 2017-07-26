@@ -6,20 +6,23 @@ SRC = VecAdd.cpp
 
 default: build
 
+LINKFLAGS = 
+
 ifneq (,$(findstring Cuda,$(KOKKOS_DEVICES)))
 CXX = ${KOKKOS_PATH}/config/nvcc_wrapper
+CXXFLAGS = -ccbin mpicxx
+LINKFLAGS = -ccbin mpicxx
 EXE = ${EXE_NAME}.cuda
 KOKKOS_ARCH = "Power8,Pascal60"
 KOKKOS_CUDA_OPTIONS = "enable_lambda"
 else
-CXX = g++
+CXX = mpicxx
 EXE = ${EXE_NAME}.host
 KOKKOS_ARCH = "Power"
 endif
 
-CXXFLAGS = -O3
+CXXFLAGS += -O3
 LINK = ${CXX}
-LINKFLAGS =
 
 DEPFLAGS = -M
 
