@@ -16,3 +16,11 @@ module load cuda
 ```
 make
 ```
+
+### Target Arch
+To target a Kokkos execution space set `KOKKOS_DEVICES`
+```
+KOKKOS_DEVICES=Cuda
+KOKKOS_DEVICES=OpenMP
+KOKKOS_DEVICES=Serial
+```
