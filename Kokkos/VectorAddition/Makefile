@@ -2,7 +2,7 @@ KOKKOS_PATH = ${HOME}/kokkos
 KOKKOS_DEVICES = "Cuda"
 EXE_NAME = "vec_add"
 
-SRC = $(wildcard *.cpp)
+SRC = VecAdd.cpp
 
 default: build
 
